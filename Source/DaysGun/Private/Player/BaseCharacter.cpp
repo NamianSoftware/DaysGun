@@ -24,16 +24,23 @@ ABaseCharacter::ABaseCharacter()
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
+	GetCharacterMovement()->bOrientRotationToMovement = false; // Character moves in the direction of input...	
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 0.0f, 0.0f); // ...at this rotation rate
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
 	// instead of recompiling to adjust them
-	GetCharacterMovement()->JumpZVelocity = 700.f;
-	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
+	GetCharacterMovement()->MaxAcceleration = 500.f;
+	GetCharacterMovement()->BrakingFrictionFactor = 0.f;
+
+	GetCharacterMovement()->GroundFriction = 4.f;
+	GetCharacterMovement()->MaxWalkSpeed = 175.f;
+	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
+
+	GetCharacterMovement()->JumpZVelocity = 360.f;
+	GetCharacterMovement()->AirControl = 0.f;
+	GetCharacterMovement()->AirControlBoostMultiplier = 0.f;
+	GetCharacterMovement()->AirControlBoostVelocityThreshold = 0.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -55,6 +62,8 @@ void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	SetupCharacterSettings();
+
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -80,7 +89,17 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Look);
+
+		//Sptring
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ABaseCharacter::RunStarted);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ABaseCharacter::RunFinished);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABaseCharacter::RunFinished);
 	}
+}
+
+void ABaseCharacter::SetupCharacterSettings()
+{
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
 void ABaseCharacter::Move(const FInputActionValue& Value)
@@ -117,5 +136,15 @@ void ABaseCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ABaseCharacter::RunStarted(const FInputActionValue& Value)
+{
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+}
+
+void ABaseCharacter::RunFinished(const FInputActionValue& Value)
+{
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 

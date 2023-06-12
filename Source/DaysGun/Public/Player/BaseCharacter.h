@@ -15,6 +15,15 @@ class UInputMappingContext;
 class UInputAction;
 
 
+UENUM(BlueprintType)
+enum class ELocomotionState : uint8
+{
+	ELS_Idle UMETA(DisplayName = "Idle"),
+	ELS_Walk UMETA(DisplayName = "Walk"),
+	ELS_Run UMETA(DisplayName = "Run"),
+};
+
+
 UCLASS()
 class DAYSGUN_API ABaseCharacter : public ACharacter
 {
@@ -34,8 +43,6 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* BackpackMesh;
 #pragma endregion
-
-
 #pragma endregion
 
 public:
@@ -44,6 +51,19 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+
+#pragma region CharacterSettings
+private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	float WalkSpeed = 175.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	float RunSpeed = 300.f;
+
+private:
+	void SetupCharacterSettings();
+#pragma endregion
 
 #pragma region Input
 private:
@@ -63,12 +83,20 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
+	/** Look Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SprintAction;
+
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	/** Called for sptring input */
+	void RunStarted(const FInputActionValue& Value);
+	void RunFinished(const FInputActionValue& Value);
 
 
 #pragma endregion
