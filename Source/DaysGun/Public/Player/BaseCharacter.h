@@ -55,10 +55,10 @@ protected:
 
 #pragma region CharacterSettings
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings", meta = (AllowPrivateAccess = "true"))
 	float WalkSpeed = 175.f;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings", meta = (AllowPrivateAccess = "true"))
 	float RunSpeed = 300.f;
 
 private:
@@ -97,8 +97,6 @@ protected:
 	/** Called for sptring input */
 	void RunStarted(const FInputActionValue& Value);
 	void RunFinished(const FInputActionValue& Value);
-
-
 #pragma endregion
 
 };
