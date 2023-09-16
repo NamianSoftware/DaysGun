@@ -15,21 +15,13 @@ class UInputMappingContext;
 class UInputAction;
 
 
-UENUM(BlueprintType)
-enum class ELocomotionState : uint8
-{
-	ELS_Idle UMETA(DisplayName = "Idle"),
-	ELS_Walk UMETA(DisplayName = "Walk"),
-	ELS_Run UMETA(DisplayName = "Run"),
-};
-
-
 UCLASS()
 class DAYSGUN_API ABaseCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 #pragma region Components
+
 private:
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -54,6 +46,7 @@ protected:
 
 
 #pragma region CharacterSettings
+
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings", meta = (AllowPrivateAccess = "true"))
 	float WalkSpeed = 175.f;
@@ -66,6 +59,7 @@ private:
 #pragma endregion
 
 #pragma region Input
+
 private:
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -98,5 +92,4 @@ protected:
 	void RunStarted(const FInputActionValue& Value);
 	void RunFinished(const FInputActionValue& Value);
 #pragma endregion
-
 };
