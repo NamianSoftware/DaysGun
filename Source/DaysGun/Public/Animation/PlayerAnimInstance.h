@@ -43,6 +43,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	bool InStartState();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	bool StateMachineIsWalkStartState();
+
 private:
 	void SetReferences();
 	void SetEssentialMovementData();
@@ -60,12 +63,21 @@ private:
 	void DetermineGroundLocomotionState();
 
 	void UpdateStop();
+
 	void UpdateOnWalkEntry();
 	void UpdateOnRunToWalk();
+
+	void UpdateOnRunEntry();
+	void UpdateOnWalkToRun();
+
 	void UpdateLocomotionValues();
 
 	void CycleRotationBehavior();
 	void StartRotationBehavior();
+
+	void UpdateEntryVariables();
+
+	void CalculateTargetRotationSmoothed();
 
 protected:
 #pragma region References
@@ -114,7 +126,6 @@ protected:
 	FVector Lean;
 #pragma endregion
 
-
 #pragma region Locomotion
 	UPROPERTY(BlueprintReadOnly, Category="Locomotion")
 	ELocomotionState LocomotionState;
@@ -124,34 +135,70 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category="Locomotion")
 	float TimeInLocomotionState;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category="Locomotion")
 	float PlayRate;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category="Locomotion")
 	bool PlayStartAnim;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category="Locomotion")
 	bool PlayGaitTransitionAnim;
 
-#pragma region Animations
-	UPROPERTY(BlueprintReadOnly, Category="Locomotion|Anims")
+#pragma region AnimationData
+	UPROPERTY(BlueprintReadOnly, Category="AnimationData")
 	UAnimSequence* StopAnim;
-	
-	UPROPERTY(BlueprintReadOnly, Category="Locomotion|Anims")
+
+	UPROPERTY(BlueprintReadOnly, Category="AnimationData")
+	UAnimSequence* WalkStartAnim;
+
+	UPROPERTY(BlueprintReadOnly, Category="AnimationData")
+	UAnimSequence* RunStartAnim;
+
+	UPROPERTY(BlueprintReadOnly, Category="AnimationData")
+	UAnimSequence* RunToWalkAnim;
+
+	UPROPERTY(BlueprintReadOnly, Category="AnimationData")
+	UAnimSequence* WalkToRunAnim;
+
+	UPROPERTY(BlueprintReadOnly, Category="AnimationData")
 	float AnimStartTime;
 #pragma endregion
 
 #pragma region Curves
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
 	FName MoveDataSpeedCurveName = "MoveData_Speed";
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
+	FName MoveDataFootPhaseCurveName = "MoveData_FootPhase";
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
+	FName MoveDataRotationBlendName = "MoveData_RotationBlend";
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves")
 	float MoveDataSpeedMinClampValue = 50.f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves")
 	float MoveDataSpeedMaxClampValue = 1000.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves")
+	float MoveDataLeftFootPhaseLimit = 0.5f;
 #pragma endregion
+#pragma endregion
+
+
+#pragma region Rotation
+	UPROPERTY(BlueprintReadOnly, Category="Rotation")
+	FRotator StartRotation;
+
+	UPROPERTY(BlueprintReadOnly, Category="Rotation")
+	FRotator TargetRotation;
+
+	UPROPERTY(BlueprintReadOnly, Category="Rotation")
+	FRotator TargetRotationSmoothed;
+
+	UPROPERTY(BlueprintReadOnly, Category="Rotation")
+	float StartAngle;
 #pragma endregion
 
 private:
@@ -166,7 +213,7 @@ private:
 #pragma region Locomotion
 	UPROPERTY(EditDefaultsOnly, Category="Locomotion")
 	float MinTimeInLocomotionState = 0.15f;
-	
+
 	UPROPERTY(EditDefaultsOnly, Category="Locomotion")
 	float MinTimeGaitTransitionAnim = 1.f;
 
@@ -195,26 +242,111 @@ private:
 #pragma region Start
 	UPROPERTY(EditDefaultsOnly, Category="Locomotion|Start")
 	float MaxSpeedForPlayingStartAnim = 150.f;
-#pragma endregion 
-	
+#pragma endregion
+
 #pragma region Stop
 	UPROPERTY(EditDefaultsOnly, Category="Locomotion|Stop")
 	float RunStopSpeedLimit = 200.f;
-#pragma endregion 
+#pragma endregion
 
 #pragma region Animations
-	UPROPERTY(EditDefaultsOnly, Category="Anmimations|Stop")
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Stop")
 	UAnimSequence* WalkStopAnim;
-	
-	UPROPERTY(EditDefaultsOnly, Category="Anmimations|Stop")
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Stop")
 	float WalkAnimStartTime = 0.f;
-	
-	UPROPERTY(EditDefaultsOnly, Category="Anmimations|Stop")
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Stop")
 	UAnimSequence* RunStopAnim;
-	
-	UPROPERTY(EditDefaultsOnly, Category="Anmimations|Stop")
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Stop")
 	float RunAnimStartTime = 0.f;
-#pragma endregion 
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	UAnimSequence* WalkStart90LAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	float WalkStart90LAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	UAnimSequence* WalkStart180LAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	float WalkStart180LAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	UAnimSequence* WalkStart90RAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	float WalkStart90RAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	UAnimSequence* WalkStart180RAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	float WalkStart180RAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	UAnimSequence* WalkStartFAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Walk")
+	float WalkStartFAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	UAnimSequence* RunStart90LAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	float RunStart90LAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	UAnimSequence* RunStart180LAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	float RunStart180LAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	UAnimSequence* RunStart90RAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	float RunStart90RAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	UAnimSequence* RunStart180RAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	float RunStart180RAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	UAnimSequence* RunStartFAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Start|Run")
+	float RunStartFAnimTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Transition")
+	UAnimSequence* WalkToRunLFAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Transition")
+	float WalkToRunLFTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Transition")
+	UAnimSequence* WalkToRunRFAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Transition")
+	float WalkToRunRFTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Transition")
+	UAnimSequence* RunToWalkLFAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Transition")
+	float RunToWalkLFTime = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Transition")
+	UAnimSequence* RunToWalkRFAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Animations|Transition")
+	float RunToWalkRFTime = 0.f;
+
+#pragma endregion
 #pragma endregion
 
 private:
@@ -228,6 +360,19 @@ private:
 	                                      void (UPlayerAnimInstance::*OnExitCallback)(),
 	                                      void (UPlayerAnimInstance::*WhileTrueCallback)(),
 	                                      void (UPlayerAnimInstance::*WhileFalseCallback)());
+
+	FORCEINLINE void UpdateStartAnim(UAnimSequence* FinishAnim,
+							  UAnimSequence* Start90LAnim, float Start90LAnimTime,
+							  UAnimSequence* Start180LAnim, float Start180LAnimTime,
+							  UAnimSequence* Start90RAnim, float Start90RAnimTime,
+							  UAnimSequence* Start180RAnim, float Start180RAnimTime,
+							  UAnimSequence* StartFAnim, float StartFAnimTime);
+
+	FORCEINLINE void UpdateTransitionAnim(UAnimSequence* FinishAnim,
+	                          UAnimSequence* TransitionLFAnim, float AnimLFStartTime,
+	                          UAnimSequence* TransitionRFAnim, float AnimRFStartTime);
+
+	FORCEINLINE float CalculateConstRotationRate() const;
 #pragma endregion
 
 private:
@@ -254,14 +399,14 @@ private:
 	void WhileTrueRun();
 	void WhileFalseRun();
 #pragma endregion
-	
+
 #pragma region CrouchCallbacks
 	void OnEntryCrouch();
 	void OnExitCrouch();
 	void WhileTrueCrouch();
 	void WhileFalseCrouch();
 #pragma endregion
-	
+
 #pragma region JumpCallbacks
 	void OnEntryJump();
 	void OnExitJump();

@@ -108,10 +108,8 @@ void UPlayerAnimInstance::UpdateCharacterRotation()
 	if (InCycleState())
 	{
 		CycleRotationBehavior();
-		return;
 	}
-
-	if (InStartState())
+	else if (InStartState())
 	{
 		StartRotationBehavior();
 	}
@@ -237,12 +235,42 @@ void UPlayerAnimInstance::UpdateStop()
 
 void UPlayerAnimInstance::UpdateOnWalkEntry()
 {
-	// TODO: update on walk entry logic
+	UpdateEntryVariables();
+	UpdateStartAnim(WalkStartAnim,
+	                WalkStart90LAnim, WalkStart90LAnimTime,
+	                WalkStart180LAnim, WalkStart180LAnimTime,
+	                WalkStart90RAnim, WalkStart90RAnimTime,
+	                WalkStart180RAnim, WalkStart180RAnimTime,
+	                WalkStartFAnim, WalkStartFAnimTime);
 }
 
 void UPlayerAnimInstance::UpdateOnRunToWalk()
 {
-	// TODO: update on run entry logic
+	UpdateTransitionAnim(RunToWalkAnim,
+	                     RunToWalkLFAnim,
+	                     RunToWalkLFTime,
+	                     RunToWalkRFAnim,
+	                     RunToWalkRFTime);
+}
+
+void UPlayerAnimInstance::UpdateOnRunEntry()
+{
+	UpdateEntryVariables();
+	UpdateStartAnim(RunStartAnim,
+	                RunStart90LAnim, RunStart90LAnimTime,
+	                RunStart180LAnim, RunStart180LAnimTime,
+	                RunStart90RAnim, RunStart90RAnimTime,
+	                RunStart180RAnim, RunStart180RAnimTime,
+	                RunStartFAnim, RunStartFAnimTime);
+}
+
+void UPlayerAnimInstance::UpdateOnWalkToRun()
+{
+	UpdateTransitionAnim(WalkToRunAnim,
+	                     WalkToRunLFAnim,
+	                     WalkToRunLFTime,
+	                     WalkToRunRFAnim,
+	                     WalkToRunRFTime);
 }
 
 void UPlayerAnimInstance::UpdateLocomotionValues()
@@ -256,12 +284,63 @@ void UPlayerAnimInstance::UpdateLocomotionValues()
 
 void UPlayerAnimInstance::CycleRotationBehavior()
 {
-	// TODO: cycle rotation logic
+	if (UKismetMathLibrary::NotEqual_RotatorRotator(ActorRotation, TargetRotationSmoothed, 0.1f))
+	{
+		TargetRotation = ActorRotation;
+		TargetRotationSmoothed = ActorRotation;
+	}
+
+	CalculateTargetRotationSmoothed();
+
+	const auto NewRotation = FRotator(0.f, TargetRotationSmoothed.Yaw, 0.f);
+	PlayerRef->SetActorRotation(NewRotation);
 }
 
 void UPlayerAnimInstance::StartRotationBehavior()
 {
-	// TODO: start rotation logic
+	const auto TargetRotationBeforeInterp = TargetRotationSmoothed;
+	CalculateTargetRotationSmoothed();
+
+	const auto TargetRotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(
+		TargetRotationSmoothed, TargetRotationBeforeInterp).Yaw;
+	StartAngle += TargetRotationDelta;
+
+	const auto RotationBlendValue = GetCurveValue(MoveDataRotationBlendName);
+	const auto DeltaAngle = UKismetMathLibrary::Multiply_DoubleDouble(StartAngle, RotationBlendValue);
+
+	const auto NewRotation = UKismetMathLibrary::ComposeRotators(StartRotation, FRotator(0.f, DeltaAngle, 0.f));
+	PlayerRef->SetActorRotation(NewRotation);
+}
+
+void UPlayerAnimInstance::UpdateEntryVariables()
+{
+	StartRotation = ActorRotation;
+
+	const auto MovementVector = GroundSpeed > 15.f ? InputVector : Velocity;
+	TargetRotation = UKismetMathLibrary::MakeRotFromX(MovementVector);
+	TargetRotationSmoothed = TargetRotation;
+
+	StartAngle = UKismetMathLibrary::NormalizedDeltaRotator(TargetRotation, StartRotation).Yaw;
+}
+
+void UPlayerAnimInstance::CalculateTargetRotationSmoothed()
+{
+	const auto ConstRotationRate = CalculateConstRotationRate();
+	const auto WorldDeltaSeconds = GetWorld()->GetDeltaSeconds();
+
+	TargetRotation = UKismetMathLibrary::RInterpTo_Constant(
+		TargetRotation,
+		UKismetMathLibrary::MakeRotFromX(Velocity),
+		WorldDeltaSeconds,
+		ConstRotationRate
+	);
+
+	TargetRotationSmoothed = UKismetMathLibrary::RInterpTo_Constant(
+		TargetRotationSmoothed,
+		TargetRotation,
+		WorldDeltaSeconds,
+		ConstRotationRate
+	);
 }
 
 bool UPlayerAnimInstance::IsMovementWithinThresholds(float MinCurrentSpeed, float MinMaxSpeed,
@@ -304,6 +383,65 @@ void UPlayerAnimInstance::TrackLocomotionState(ELocomotionState TracedState, boo
 			(this->*WhileFalseCallback)();
 		}
 	}
+}
+
+void UPlayerAnimInstance::UpdateStartAnim(UAnimSequence* FinishAnim, UAnimSequence* Start90LAnim,
+                                          float Start90LAnimTime, UAnimSequence* Start180LAnim, float Start180LAnimTime,
+                                          UAnimSequence* Start90RAnim,
+                                          float Start90RAnimTime, UAnimSequence* Start180RAnim, float Start180RAnimTime,
+                                          UAnimSequence* StartFAnim,
+                                          float StartFAnimTime)
+{
+	if (UKismetMathLibrary::InRange_FloatFloat(StartAngle, -135, -45, false, true))
+	{
+		FinishAnim = Start90LAnim;
+		AnimStartTime = Start90LAnimTime;
+	}
+	else if (UKismetMathLibrary::InRange_FloatFloat(StartAngle, -180, -135, true, true))
+	{
+		FinishAnim = Start180LAnim;
+		AnimStartTime = Start180LAnimTime;
+	}
+	else if (UKismetMathLibrary::InRange_FloatFloat(StartAngle, 45, 135, true, false))
+	{
+		FinishAnim = Start90RAnim;
+		AnimStartTime = Start90RAnimTime;
+	}
+	else if (UKismetMathLibrary::InRange_FloatFloat(StartAngle, 135, 180, true, true))
+	{
+		FinishAnim = Start180RAnim;
+		AnimStartTime = Start180RAnimTime;
+	}
+	else
+	{
+		FinishAnim = StartFAnim;
+		AnimStartTime = StartFAnimTime;
+	}
+}
+
+void UPlayerAnimInstance::UpdateTransitionAnim(UAnimSequence* FinishAnim, UAnimSequence* TransitionLFAnim,
+                                               float AnimLFStartTime, UAnimSequence* TransitionRFAnim,
+                                               float AnimRFStartTime)
+{
+	const auto FootPhase = GetCurveValue(MoveDataFootPhaseCurveName);
+	if (UKismetMathLibrary::GreaterEqual_DoubleDouble(FootPhase, MoveDataLeftFootPhaseLimit))
+	{
+		FinishAnim = TransitionLFAnim;
+		AnimStartTime = AnimLFStartTime;
+	}
+	else
+	{
+		FinishAnim = TransitionRFAnim;
+		AnimStartTime = AnimRFStartTime;
+	}
+}
+
+float UPlayerAnimInstance::CalculateConstRotationRate() const
+{
+	return UKismetMathLibrary::MapRangeClamped(
+		UKismetMathLibrary::Abs(InputVectorRotationRate),
+		0.f, 200.f,
+		500.f, 2000.f);
 }
 
 #pragma region IdleCallbacks
@@ -365,7 +503,24 @@ void UPlayerAnimInstance::WhileFalseWalk()
 #pragma region RunCallbacks
 void UPlayerAnimInstance::OnEntryRun()
 {
-	// TODO: entry run logic
+	if (PrevLocomotionState == ELocomotionState::ELS_Run)
+	{
+		if (StateMachineIsWalkStartState())
+		{
+			PlayStartAnim = true;
+			UpdateOnRunEntry();
+		}
+		else if (UKismetMathLibrary::Less_DoubleDouble(TimeInLocomotionState, MinTimeGaitTransitionAnim))
+		{
+			PlayGaitTransitionAnim = true;
+			UpdateOnRunToWalk();
+		}
+	}
+	else if (PrevLocomotionState == ELocomotionState::ELS_Idle)
+	{
+		PlayStartAnim = true;
+		UpdateOnRunEntry();
+	}
 }
 
 void UPlayerAnimInstance::OnExitRun()
