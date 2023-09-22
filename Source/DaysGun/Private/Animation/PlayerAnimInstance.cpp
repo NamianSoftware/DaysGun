@@ -385,12 +385,12 @@ void UPlayerAnimInstance::TrackLocomotionState(ELocomotionState TracedState, boo
 	}
 }
 
-void UPlayerAnimInstance::UpdateStartAnim(UAnimSequence* FinishAnim, UAnimSequence* Start90LAnim,
-                                          float Start90LAnimTime, UAnimSequence* Start180LAnim, float Start180LAnimTime,
+void UPlayerAnimInstance::UpdateStartAnim(UAnimSequence*& FinishAnim, UAnimSequence* Start90LAnim,
+                                          const float Start90LAnimTime, UAnimSequence* Start180LAnim, const float Start180LAnimTime,
                                           UAnimSequence* Start90RAnim,
-                                          float Start90RAnimTime, UAnimSequence* Start180RAnim, float Start180RAnimTime,
+                                          const float Start90RAnimTime, UAnimSequence* Start180RAnim, const float Start180RAnimTime,
                                           UAnimSequence* StartFAnim,
-                                          float StartFAnimTime)
+                                          const float StartFAnimTime)
 {
 	if (UKismetMathLibrary::InRange_FloatFloat(StartAngle, -135, -45, false, true))
 	{
@@ -419,9 +419,9 @@ void UPlayerAnimInstance::UpdateStartAnim(UAnimSequence* FinishAnim, UAnimSequen
 	}
 }
 
-void UPlayerAnimInstance::UpdateTransitionAnim(UAnimSequence* FinishAnim, UAnimSequence* TransitionLFAnim,
-                                               float AnimLFStartTime, UAnimSequence* TransitionRFAnim,
-                                               float AnimRFStartTime)
+void UPlayerAnimInstance::UpdateTransitionAnim(UAnimSequence*& FinishAnim, UAnimSequence* TransitionLFAnim,
+                                               const float AnimLFStartTime, UAnimSequence* TransitionRFAnim,
+                                               const float AnimRFStartTime)
 {
 	const auto FootPhase = GetCurveValue(MoveDataFootPhaseCurveName);
 	if (UKismetMathLibrary::GreaterEqual_DoubleDouble(FootPhase, MoveDataLeftFootPhaseLimit))
@@ -473,7 +473,7 @@ void UPlayerAnimInstance::OnEntryWalk()
 			PlayStartAnim = true;
 			UpdateOnWalkEntry();
 		}
-		else if (UKismetMathLibrary::Less_DoubleDouble(TimeInLocomotionState, MinTimeGaitTransitionAnim))
+		else if (UKismetMathLibrary::Less_DoubleDouble(MinTimeGaitTransitionAnim, TimeInLocomotionState))
 		{
 			PlayGaitTransitionAnim = true;
 			UpdateOnRunToWalk();
@@ -503,17 +503,17 @@ void UPlayerAnimInstance::WhileFalseWalk()
 #pragma region RunCallbacks
 void UPlayerAnimInstance::OnEntryRun()
 {
-	if (PrevLocomotionState == ELocomotionState::ELS_Run)
+	if (PrevLocomotionState == ELocomotionState::ELS_Walk)
 	{
 		if (StateMachineIsWalkStartState())
 		{
 			PlayStartAnim = true;
 			UpdateOnRunEntry();
 		}
-		else if (UKismetMathLibrary::Less_DoubleDouble(TimeInLocomotionState, MinTimeGaitTransitionAnim))
+		else if (UKismetMathLibrary::Less_DoubleDouble(MinTimeGaitTransitionAnim, TimeInLocomotionState))
 		{
 			PlayGaitTransitionAnim = true;
-			UpdateOnRunToWalk();
+			UpdateOnWalkToRun();
 		}
 	}
 	else if (PrevLocomotionState == ELocomotionState::ELS_Idle)

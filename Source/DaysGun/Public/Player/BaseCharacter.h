@@ -42,16 +42,17 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 
 #pragma region CharacterSettings
 
 private:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Speed", meta = (AllowPrivateAccess = "true"))
 	float WalkSpeed = 175.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Speed", meta = (AllowPrivateAccess = "true"))
 	float RunSpeed = 300.f;
 
 private:
@@ -91,5 +92,16 @@ protected:
 	/** Called for sptring input */
 	void RunStarted(const FInputActionValue& Value);
 	void RunFinished(const FInputActionValue& Value);
+#pragma endregion
+
+#pragma region SmoothSpeedTransition
+private:
+	UPROPERTY(EditDefaultsOnly, Category="Settings|Speed", meta = (AllowPrivateAccess = "true"))
+	float MaxSpeedTransitionInterp = 4.f;
+	
+	float TargetMaxSpeed;
+
+private:
+	void UpdateMaxSpeed(float DeltaSeconds);
 #pragma endregion
 };

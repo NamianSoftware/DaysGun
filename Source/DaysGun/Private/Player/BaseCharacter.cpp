@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Kismet/KismetMathLibrary.h"
 
 ABaseCharacter::ABaseCharacter()
 {
@@ -34,36 +35,43 @@ ABaseCharacter::ABaseCharacter()
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	// Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	BackpackMesh = CreateDefaultSubobject<USkeletalMeshComponent>("Backpack");
 	BackpackMesh->SetupAttachment(GetMesh(), "BackpackSocket");
-
 }
 
 void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	SetupCharacterSettings();
 
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<
+			UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-	
+}
+
+void ABaseCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UpdateMaxSpeed(DeltaSeconds);
 }
 
 void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
-
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	{
 		//Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
@@ -84,6 +92,7 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 void ABaseCharacter::SetupCharacterSettings()
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	TargetMaxSpeed = WalkSpeed;
 }
 
 void ABaseCharacter::Move(const FInputActionValue& Value)
@@ -124,10 +133,21 @@ void ABaseCharacter::Look(const FInputActionValue& Value)
 
 void ABaseCharacter::RunStarted(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+	TargetMaxSpeed = RunSpeed;
 }
 
 void ABaseCharacter::RunFinished(const FInputActionValue& Value)
 {
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	TargetMaxSpeed = WalkSpeed;
+}
+
+void ABaseCharacter::UpdateMaxSpeed(float DeltaSeconds)
+{
+	if (UKismetMathLibrary::EqualEqual_DoubleDouble(TargetMaxSpeed, GetCharacterMovement()->MaxWalkSpeed))
+	{
+		return;
+	}
+
+	GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(
+		GetCharacterMovement()->MaxWalkSpeed, TargetMaxSpeed, DeltaSeconds, MaxSpeedTransitionInterp);
 }

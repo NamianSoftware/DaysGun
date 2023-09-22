@@ -361,14 +361,14 @@ private:
 	                                      void (UPlayerAnimInstance::*WhileTrueCallback)(),
 	                                      void (UPlayerAnimInstance::*WhileFalseCallback)());
 
-	FORCEINLINE void UpdateStartAnim(UAnimSequence* FinishAnim,
+	FORCEINLINE void UpdateStartAnim(UAnimSequence*& FinishAnim,
 							  UAnimSequence* Start90LAnim, float Start90LAnimTime,
 							  UAnimSequence* Start180LAnim, float Start180LAnimTime,
 							  UAnimSequence* Start90RAnim, float Start90RAnimTime,
 							  UAnimSequence* Start180RAnim, float Start180RAnimTime,
 							  UAnimSequence* StartFAnim, float StartFAnimTime);
 
-	FORCEINLINE void UpdateTransitionAnim(UAnimSequence* FinishAnim,
+	FORCEINLINE void UpdateTransitionAnim(UAnimSequence*& FinishAnim,
 	                          UAnimSequence* TransitionLFAnim, float AnimLFStartTime,
 	                          UAnimSequence* TransitionRFAnim, float AnimRFStartTime);
 
