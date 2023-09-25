@@ -188,6 +188,12 @@ void UPlayerAnimInstance::UpdateLean()
 		WorldDeltaSeconds,
 		LeanInterpSpeed
 	);
+
+	const auto LeanXPower = GetCurveValue(MoveDataLeanXName);
+	const auto LeanYPower = GetCurveValue(MoveDataLeanYName);
+
+	LeanX = Lean.X * LeanXPower;
+	LeanY = Lean.Y * LeanYPower;
 }
 
 void UPlayerAnimInstance::DetermineGroundLocomotionState()

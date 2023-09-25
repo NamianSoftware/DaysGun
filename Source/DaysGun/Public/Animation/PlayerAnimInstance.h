@@ -121,8 +121,13 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category="EssentialData")
 	FVector Acceleration;
-
+	
 	UPROPERTY(BlueprintReadOnly, Category="EssentialData")
+	float LeanX;
+	
+	UPROPERTY(BlueprintReadOnly, Category="EssentialData")
+	float LeanY;
+	
 	FVector Lean;
 #pragma endregion
 
@@ -174,6 +179,12 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
 	FName MoveDataRotationBlendName = "MoveData_RotationBlend";
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
+	FName MoveDataLeanXName = "MoveData_LeanX";
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
+	FName MoveDataLeanYName = "MoveData_LeanY";
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves")
 	float MoveDataSpeedMinClampValue = 50.f;
