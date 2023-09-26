@@ -52,6 +52,7 @@ void UPlayerAnimInstance::SetEssentialMovementData()
 
 	UpdateInputVectorRotationRate();
 	UpdateLean();
+	UpdateAimOffset();
 }
 
 void UPlayerAnimInstance::DetermineLocomotionState()
@@ -194,6 +195,13 @@ void UPlayerAnimInstance::UpdateLean()
 
 	LeanX = Lean.X * LeanXPower;
 	LeanY = Lean.Y * LeanYPower;
+}
+
+void UPlayerAnimInstance::UpdateAimOffset()
+{
+	const auto AimOffsetRotator = UKismetMathLibrary::NormalizedDeltaRotator(PlayerRef->GetControlRotation(), PlayerRef->GetActorRotation());
+	AimYaw = AimOffsetRotator.Yaw;
+	AimPitch = AimOffsetRotator.Pitch;
 }
 
 void UPlayerAnimInstance::DetermineGroundLocomotionState()

@@ -59,6 +59,7 @@ private:
 	void UpdatePlayerInput();
 	void UpdateInputVectorRotationRate();
 	void UpdateLean();
+	void UpdateAimOffset();
 
 	void DetermineGroundLocomotionState();
 
@@ -122,13 +123,20 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="EssentialData")
 	FVector Acceleration;
 	
-	UPROPERTY(BlueprintReadOnly, Category="EssentialData")
+	UPROPERTY(BlueprintReadOnly, Category="EssentialData|Lean")
 	float LeanX;
 	
-	UPROPERTY(BlueprintReadOnly, Category="EssentialData")
+	UPROPERTY(BlueprintReadOnly, Category="EssentialData|Lean")
 	float LeanY;
 	
 	FVector Lean;
+
+	UPROPERTY(BlueprintReadOnly, Category="EssentialData|Lean")
+	float AimYaw;
+	
+	UPROPERTY(BlueprintReadOnly, Category="EssentialData|Lean")
+	float AimPitch;
+	
 #pragma endregion
 
 #pragma region Locomotion
