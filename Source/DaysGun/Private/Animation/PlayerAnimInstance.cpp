@@ -28,7 +28,7 @@ void UPlayerAnimInstance::NativePostEvaluateAnimation()
 	Super::NativePostEvaluateAnimation();
 	if (!PlayerRef) return;
 
-	UpdateCharacterRotation();
+	UpdateCharacterPosition();
 	ResetTransition();
 }
 
@@ -104,7 +104,7 @@ void UPlayerAnimInstance::TrackLocomotionStates()
 	                     &UPlayerAnimInstance::WhileFalseJump);
 }
 
-void UPlayerAnimInstance::UpdateCharacterRotation()
+void UPlayerAnimInstance::UpdateCharacterPosition()
 {
 	if (InCycleState())
 	{
@@ -113,6 +113,10 @@ void UPlayerAnimInstance::UpdateCharacterRotation()
 	else if (InStartState())
 	{
 		StartRotationBehavior();
+	}
+	else if (InStopState())
+	{
+		StopMovingBehavior();
 	}
 }
 
@@ -199,7 +203,8 @@ void UPlayerAnimInstance::UpdateLean()
 
 void UPlayerAnimInstance::UpdateAimOffset()
 {
-	const auto AimOffsetRotator = UKismetMathLibrary::NormalizedDeltaRotator(PlayerRef->GetControlRotation(), PlayerRef->GetActorRotation());
+	const auto AimOffsetRotator = UKismetMathLibrary::NormalizedDeltaRotator(
+		PlayerRef->GetControlRotation(), PlayerRef->GetActorRotation());
 	AimYaw = AimOffsetRotator.Yaw;
 	AimPitch = AimOffsetRotator.Pitch;
 }
@@ -326,6 +331,30 @@ void UPlayerAnimInstance::StartRotationBehavior()
 	PlayerRef->SetActorRotation(NewRotation);
 }
 
+void UPlayerAnimInstance::StopMovingBehavior()
+{
+	const auto PrevStopMovingValue = StopMovingValue;
+	
+	StopMovingValue = GetCurveValue(MoveDataStopMovingName);
+	if(FMath::IsNearlyZero(StopMovingValue)) return;
+
+	const auto StopMovingDelta = StopMovingValue - PrevStopMovingValue;
+	if(FMath::IsNearlyZero(StopMovingDelta)) return;
+
+	const auto CurrentLocation = PlayerRef->GetActorLocation();
+	const auto ForwardVector = UKismetMathLibrary::GetForwardVector(PlayerRef->GetActorRotation());
+	const auto LocalTargetLocation = ForwardVector * StopMovingDelta;
+
+	const auto TargetLocation = CurrentLocation + LocalTargetLocation;
+	const auto SmoothedTargetLocation = UKismetMathLibrary::VEase(
+		CurrentLocation,
+		TargetLocation,
+		1.0,
+		EEasingFunc::Linear);
+	
+	PlayerRef->SetActorLocation(SmoothedTargetLocation);
+}
+
 void UPlayerAnimInstance::UpdateEntryVariables()
 {
 	StartRotation = ActorRotation;
@@ -400,9 +429,11 @@ void UPlayerAnimInstance::TrackLocomotionState(ELocomotionState TracedState, boo
 }
 
 void UPlayerAnimInstance::UpdateStartAnim(UAnimSequence*& FinishAnim, UAnimSequence* Start90LAnim,
-                                          const float Start90LAnimTime, UAnimSequence* Start180LAnim, const float Start180LAnimTime,
+                                          const float Start90LAnimTime, UAnimSequence* Start180LAnim,
+                                          const float Start180LAnimTime,
                                           UAnimSequence* Start90RAnim,
-                                          const float Start90RAnimTime, UAnimSequence* Start180RAnim, const float Start180RAnimTime,
+                                          const float Start90RAnimTime, UAnimSequence* Start180RAnim,
+                                          const float Start180RAnimTime,
                                           UAnimSequence* StartFAnim,
                                           const float StartFAnimTime)
 {
@@ -461,6 +492,7 @@ float UPlayerAnimInstance::CalculateConstRotationRate() const
 #pragma region IdleCallbacks
 void UPlayerAnimInstance::OnEntryIdle()
 {
+	StopMovingValue = 0.f;
 	UpdateStop();
 }
 

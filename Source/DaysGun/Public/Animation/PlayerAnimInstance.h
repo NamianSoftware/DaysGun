@@ -42,6 +42,9 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	bool InStartState();
+	
+	UFUNCTION(BlueprintImplementableEvent)
+	bool InStopState();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	bool StateMachineIsWalkStartState();
@@ -52,7 +55,7 @@ private:
 	void DetermineLocomotionState();
 	void TrackLocomotionStates();
 
-	void UpdateCharacterRotation();
+	void UpdateCharacterPosition();
 	void ResetTransition();
 
 	void UpdateVelocity();
@@ -75,6 +78,7 @@ private:
 
 	void CycleRotationBehavior();
 	void StartRotationBehavior();
+	void StopMovingBehavior();
 
 	void UpdateEntryVariables();
 
@@ -157,6 +161,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category="Locomotion")
 	bool PlayGaitTransitionAnim;
+	
+	UPROPERTY(BlueprintReadOnly, Category="Locomotion")
+	float StopMovingValue;
 
 #pragma region AnimationData
 	UPROPERTY(BlueprintReadOnly, Category="AnimationData")
@@ -193,6 +200,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
 	FName MoveDataLeanYName = "MoveData_LeanY";
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves|Names")
+	FName MoveDataStopMovingName = "MoveData_StopMoving";
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Curves")
 	float MoveDataSpeedMinClampValue = 50.f;
