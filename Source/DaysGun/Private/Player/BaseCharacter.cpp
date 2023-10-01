@@ -93,6 +93,8 @@ void ABaseCharacter::SetupCharacterSettings()
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	TargetMaxSpeed = WalkSpeed;
+	
+	GetCharacterMovement()->MaxAcceleration = WalkMaxAcceleration;
 }
 
 void ABaseCharacter::Move(const FInputActionValue& Value)
@@ -134,11 +136,13 @@ void ABaseCharacter::Look(const FInputActionValue& Value)
 void ABaseCharacter::RunStarted(const FInputActionValue& Value)
 {
 	TargetMaxSpeed = RunSpeed;
+	GetCharacterMovement()->MaxAcceleration = RunMaxAcceleration;
 }
 
 void ABaseCharacter::RunFinished(const FInputActionValue& Value)
 {
 	TargetMaxSpeed = WalkSpeed;
+	GetCharacterMovement()->MaxAcceleration = WalkMaxAcceleration;
 }
 
 void ABaseCharacter::UpdateMaxSpeed(float DeltaSeconds)
@@ -147,7 +151,7 @@ void ABaseCharacter::UpdateMaxSpeed(float DeltaSeconds)
 	{
 		return;
 	}
-
+	
 	GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(
 		GetCharacterMovement()->MaxWalkSpeed, TargetMaxSpeed, DeltaSeconds, MaxSpeedTransitionInterp);
 }

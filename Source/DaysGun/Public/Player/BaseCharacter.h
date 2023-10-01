@@ -55,6 +55,12 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Speed", meta = (AllowPrivateAccess = "true"))
 	float RunSpeed = 300.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Speed", meta = (AllowPrivateAccess = "true"))
+	float WalkMaxAcceleration = 150.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings|Speed", meta = (AllowPrivateAccess = "true"))
+	float RunMaxAcceleration = 350.f;
+
 private:
 	void SetupCharacterSettings();
 #pragma endregion

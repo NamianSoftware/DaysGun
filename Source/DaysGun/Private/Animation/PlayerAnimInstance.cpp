@@ -352,7 +352,7 @@ void UPlayerAnimInstance::StopMovingBehavior()
 		1.0,
 		EEasingFunc::Linear);
 	
-	PlayerRef->SetActorLocation(SmoothedTargetLocation);
+	PlayerRef->SetActorLocation(SmoothedTargetLocation, true);
 }
 
 void UPlayerAnimInstance::UpdateEntryVariables()
