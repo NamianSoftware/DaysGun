@@ -4,6 +4,7 @@
 #include "Animation/PlayerAnimInstance.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Player/BaseCharacter.h"
 
@@ -171,7 +172,7 @@ void UPlayerAnimInstance::UpdateInputVectorRotationRate()
 
 void UPlayerAnimInstance::UpdateLean()
 {
-	const auto WorldDeltaSeconds = GetWorld()->GetDeltaSeconds();
+	const auto WorldDeltaSeconds = UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
 
 	const auto VelocitySubtraction = UKismetMathLibrary::Subtract_VectorVector(
 		FVector(Velocity.X, Velocity.Y, 0), PrevVelocity);
@@ -368,9 +369,9 @@ void UPlayerAnimInstance::UpdateEntryVariables()
 
 void UPlayerAnimInstance::CalculateTargetRotationSmoothed()
 {
-	const auto ConstRotationRate = CalculateConstRotationRate();
-	const auto WorldDeltaSeconds = GetWorld()->GetDeltaSeconds();
+	const auto WorldDeltaSeconds = UGameplayStatics::GetWorldDeltaSeconds(GetWorld());
 
+	const auto ConstRotationRate = CalculateConstRotationRate();
 	TargetRotation = UKismetMathLibrary::RInterpTo_Constant(
 		TargetRotation,
 		UKismetMathLibrary::MakeRotFromX(Velocity),
@@ -378,11 +379,12 @@ void UPlayerAnimInstance::CalculateTargetRotationSmoothed()
 		ConstRotationRate
 	);
 
-	TargetRotationSmoothed = UKismetMathLibrary::RInterpTo_Constant(
+	const auto SmoothRotationRate = CalculateSmoothRotationRate();
+	TargetRotationSmoothed = UKismetMathLibrary::RInterpTo(
 		TargetRotationSmoothed,
 		TargetRotation,
 		WorldDeltaSeconds,
-		ConstRotationRate
+		SmoothRotationRate
 	);
 }
 
@@ -487,6 +489,14 @@ float UPlayerAnimInstance::CalculateConstRotationRate() const
 		UKismetMathLibrary::Abs(InputVectorRotationRate),
 		0.f, 200.f,
 		500.f, 2000.f);
+}
+
+float UPlayerAnimInstance::CalculateSmoothRotationRate() const
+{
+	return UKismetMathLibrary::MapRangeClamped(
+		UKismetMathLibrary::Abs(InputVectorRotationRate),
+		0.f, 200.f,
+		5.f, 15.f);
 }
 
 #pragma region IdleCallbacks

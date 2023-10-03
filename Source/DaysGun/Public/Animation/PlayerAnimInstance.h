@@ -402,6 +402,7 @@ private:
 	                          UAnimSequence* TransitionRFAnim, float AnimRFStartTime);
 
 	FORCEINLINE float CalculateConstRotationRate() const;
+	FORCEINLINE float CalculateSmoothRotationRate() const;
 #pragma endregion
 
 private:
